@@ -1,0 +1,187 @@
+--[[
+    สคริปต์เมนูควบคุม Safe56 (Roblox Studio Developer Panel)
+    ภาษา: ภาษาไทย
+--]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+
+-- อัปเดตตัวละครเมื่อมีการเกิดใหม่ (Respawn)
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    Humanoid = newChar:WaitForChild("Humanoid")
+end)
+
+-- ตัวแปรสถานะฟังก์ชัน
+local isSpeed = false
+local isInfJump = false
+local isNoclip = false
+local isESP = false
+local isFastInteract = false
+
+-- สร้าง GUI หน้าต่างหลัก
+local screenGui = script.Parent
+screenGui.Name = "Safe56_GUI"
+screenGui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 230, 0, 330)
+mainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true -- สามารถกดลากย้ายตำแหน่งหน้าต่างได้
+mainFrame.Parent = screenGui
+
+-- หัวข้อสคริปต์
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, 0, 0, 35)
+titleLabel.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+titleLabel.Text = "🛡️ Safe56 - เมนูผู้พัฒนา"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Parent = mainFrame
+
+-- จัดระเบียบปุ่มแบบแนวตั้ง
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = mainFrame
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 5)
+
+titleLabel.LayoutOrder = 0
+
+-- ฟังก์ชันสำหรับสร้างปุ่มเมนู
+local function createButton(text, layoutOrder, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 32)
+    btn.Position = UDim2.new(0.05, 0, 0, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Text = text
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 14
+    btn.LayoutOrder = layoutOrder
+    btn.Parent = mainFrame
+
+    btn.MouseButton1Click:Connect(function()
+        callback(btn)
+    end)
+    return btn
+end
+
+-- 1. วิ่งไว (Speed)
+createButton("🐎 วิ่งไว: ปิด", 1, function(btn)
+    isSpeed = not isSpeed
+    if isSpeed then
+        Humanoid.WalkSpeed = 50
+        btn.Text = "🐎 วิ่งไว: เปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(40, 160, 60)
+    else
+        Humanoid.WalkSpeed = 16
+        btn.Text = "🐎 วิ่งไว: ปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+end)
+
+-- 2. กระโดดไม่จำกัด (Infinite Jump)
+createButton("🦘 กระโดดไม่จำกัด: ปิด", 2, function(btn)
+    isInfJump = not isInfJump
+    if isInfJump then
+        btn.Text = "🦘 กระโดดไม่จำกัด: เปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(40, 160, 60)
+    else
+        btn.Text = "🦘 กระโดดไม่จำกัด: ปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if isInfJump and Character and Character:FindFirstChildOfClass("Humanoid") then
+        Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
+-- 3. เดินทะลุสิ่งกีดขวาง (Noclip)
+createButton("🧱 เดินทะลุ: ปิด", 3, function(btn)
+    isNoclip = not isNoclip
+    if isNoclip then
+        btn.Text = "🧱 เดินทะลุ: เปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(40, 160, 60)
+    else
+        btn.Text = "🧱 เดินทะลุ: ปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if isNoclip and Character then
+        for _, part in pairs(Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- 4. หยิบของเร็ว (Fast Interact / Instant ProximityPrompt)
+createButton("⚡ หยิบของเร็ว: ปิด", 4, function(btn)
+    isFastInteract = not isFastInteract
+    if isFastInteract then
+        btn.Text = "⚡ หยิบของเร็ว: เปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(40, 160, 60)
+    else
+        btn.Text = "⚡ หยิบของเร็ว: ปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+end)
+
+ProximityPromptService.PromptShown:Connect(function(prompt)
+    if isFastInteract then
+        prompt.HoldDuration = 0
+    end
+end)
+
+-- 5. มองทะลุ / แสดงตำแหน่งผู้เล่นอื่น (ESP)
+createButton("👁️ มองทะลุ (ESP): ปิด", 5, function(btn)
+    isESP = not isESP
+    if isESP then
+        btn.Text = "👁️ มองทะลุ (ESP): เปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(40, 160, 60)
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "Safe56_ESP"
+                highlight.FillColor = Color3.fromRGB(255, 50, 50)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.Parent = p.Character
+            end
+        end
+    else
+        btn.Text = "👁️ มองทะลุ (ESP): ปิด"
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("Safe56_ESP") then
+                p.Character.Safe56_ESP:Destroy()
+            end
+        end
+    end
+end)
+
+-- 6. วาปไปหาผู้เล่นอื่น (Teleport)
+createButton("🌀 วาปไปหาผู้เล่นอื่น", 6, function()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+            break
+        end
+    end
+end)
